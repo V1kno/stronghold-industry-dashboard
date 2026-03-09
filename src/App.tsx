@@ -179,8 +179,7 @@ async function apiCall(prompt: string, retries = 2) {
         signal: controller.signal,
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514",
-          max_tokens: 6000,
-          tools: [{ type: "web_search_20250305", name: "web_search" }],
+          max_tokens: 4096,
           messages: [{ role: "user", content: prompt }],
         }),
       });
@@ -197,10 +196,13 @@ async function apiCall(prompt: string, retries = 2) {
       if (data.error) throw new Error(data.error.message);
 
       // Extract all text blocks from response (skipping tool_use/tool_result blocks)
-      const textParts = (data.content || [])
-        .filter(block => block.type === "text")
-        .map(block => block.text)
+      let textParts = (data.content || [])
+        .filter((block: any) => block.type === "text")
+        .map((block: any) => block.text)
         .join("\n");
+
+      // Strip any citation tags that may leak through
+      textParts = textParts.replace(/<\/?antml:cite[^>]*>/g, "").replace(/<\/?cite[^>]*>/g, "");
 
       if (!textParts.trim()) throw new Error("Empty text response");
 
@@ -218,19 +220,19 @@ async function apiCall(prompt: string, retries = 2) {
 
 /* ── Data fetchers ── */
 const fetchOverview = (ind: string) => apiCall(
-  `Analyze "${ind}" industry. Web search for current data. Return ONLY valid JSON (no markdown, no backticks, no extra text):
+  `Analyze "${ind}" industry. Return ONLY valid JSON (no markdown, no backticks, no extra text):
 {"industryName":"str","marketSize":"str","growthRate":"str","aiAdoptionRate":0,"summary":"str(2 sentences)","aiReadinessScore":0,"disruptionRisk":"Low|Medium|High|Critical","aiMaturityDistribution":{"Early":0,"Growing":0,"Mature":0,"Leading":0},"aiAdoptionBySegment":[{"segment":"str","adoptionRate":0,"maturity":"str"}],"topAIUseCases":[{"useCase":"str","impactScore":0,"adoptionLevel":"Low|Medium|High","description":"str"}],"marketTrends":[{"trend":"str","impact":"High|Medium|Low","timeframe":"str","description":"str"}]}
 Provide 5 segments, 5 use cases, 4 trends. Use real numbers. Keep strings short.`
 );
 
 const fetchCompetitive = (ind: string) => apiCall(
-  `Competitive landscape of "${ind}" industry. Web search for current data. Return ONLY valid JSON (no markdown, no backticks, no extra text):
+  `Competitive landscape of "${ind}" industry. Return ONLY valid JSON (no markdown, no backticks, no extra text):
 {"competitors":[{"name":"str","marketSharePct":0,"aiInvestmentScore":0,"strengths":["str"],"weaknesses":["str"],"aiStrategy":"str","hq":"str"}],"kpis":[{"name":"str","industryAvg":"str","topQuartile":"str","unit":"str","trend":"up|down|stable","description":"str"}],"competitiveInsight":"str(2 sentences)"}
 Provide 6 real competitors, 5 KPIs. Keep strings short.`
 );
 
 const fetchLabor = (ind: string) => apiCall(
-  `Using Anthropic's "Labor market impacts of AI" (March 2026) observed-exposure framework, analyze "${ind}" labor market. Web search for data. Return ONLY valid JSON (no markdown, no backticks, no extra text):
+  `Using Anthropic's "Labor market impacts of AI" (March 2026) observed-exposure framework, analyze "${ind}" labor market. Return ONLY valid JSON (no markdown, no backticks, no extra text):
 {"topExposedOccupations":[{"occupation":"str","observedExposure":0,"theoreticalExposure":0,"leadingTask":"str","blsGrowthPct":0}],"exposureByCategory":[{"category":"str","theoretical":0,"observed":0}],"workforceDemographics":{"highExposure":{"avgAge":0,"femalePct":0,"bachelorsPlusPct":0,"avgHourlyWage":0,"workers":"str"},"lowExposure":{"avgAge":0,"femalePct":0,"bachelorsPlusPct":0,"avgHourlyWage":0,"workers":"str"}},"hiringTrends":{"youngWorkerImpactPct":0,"overallTrend":"str","postAIHiringShift":"str","projectedGrowth2034":"str"},"keyInsights":["str","str","str"],"riskAssessment":{"automationRiskLevel":"Low|Medium|High|Critical","timelineToImpact":"str","mostVulnerableRoles":["str","str","str"],"mostResilientRoles":["str","str","str"]}}
 Provide 6 occupations, 6 categories. Keep strings short.`
 );
@@ -326,7 +328,7 @@ export default function Dashboard() {
 
     // Pause to stay under rate limit
     setPhase("⏳ Cooling down to stay within API limits...");
-    await wait(25000);
+    await wait(15000);
 
     try {
       setPhase("② Competitive landscape & KPIs...");
@@ -336,7 +338,7 @@ export default function Dashboard() {
 
     // Pause again
     setPhase("⏳ Cooling down to stay within API limits...");
-    await wait(25000);
+    await wait(15000);
 
     try {
       setPhase("③ Labor market impact...");
