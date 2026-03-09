@@ -167,7 +167,7 @@ function parseJSON(text: string) {
 }
 
 /* ── API helper with timeout + retry ── */
-async function apiCall(prompt: string, retries = 2) {
+async function apiCall(prompt: string, retries = 1) {
   for (let attempt = 0; attempt <= retries; attempt++) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 120000);
@@ -178,7 +178,7 @@ async function apiCall(prompt: string, retries = 2) {
         headers: { "Content-Type": "application/json" },
         signal: controller.signal,
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
+          model: "claude-haiku-4-5-20251001",
           max_tokens: 4096,
           messages: [{ role: "user", content: prompt }],
         }),
@@ -188,6 +188,11 @@ async function apiCall(prompt: string, retries = 2) {
 
       if (!resp.ok) {
         const errBody = await resp.json().catch(() => ({}));
+        // If rate limited, wait 60s and retry
+        if (resp.status === 429 && attempt < retries) {
+          await new Promise(r => setTimeout(r, 60000));
+          continue;
+        }
         throw new Error(errBody?.error?.message || `HTTP ${resp.status}`);
       }
 
@@ -195,7 +200,7 @@ async function apiCall(prompt: string, retries = 2) {
 
       if (data.error) throw new Error(data.error.message);
 
-      // Extract all text blocks from response (skipping tool_use/tool_result blocks)
+      // Extract all text blocks from response
       let textParts = (data.content || [])
         .filter((block: any) => block.type === "text")
         .map((block: any) => block.text)
@@ -210,7 +215,7 @@ async function apiCall(prompt: string, retries = 2) {
     } catch (e) {
       clearTimeout(timeoutId);
       if (attempt < retries) {
-        await new Promise(r => setTimeout(r, 2000 + attempt * 1000));
+        await new Promise(r => setTimeout(r, 3000));
         continue;
       }
       throw e;
@@ -328,7 +333,7 @@ export default function Dashboard() {
 
     // Pause to stay under rate limit
     setPhase("⏳ Cooling down to stay within API limits...");
-    await wait(15000);
+    await wait(45000);
 
     try {
       setPhase("② Competitive landscape & KPIs...");
@@ -338,7 +343,7 @@ export default function Dashboard() {
 
     // Pause again
     setPhase("⏳ Cooling down to stay within API limits...");
-    await wait(15000);
+    await wait(45000);
 
     try {
       setPhase("③ Labor market impact...");
