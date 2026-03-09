@@ -315,25 +315,34 @@ export default function Dashboard() {
     setLoading(true); setTab("overview"); setElapsed(0);
     timerRef.current = setInterval(() => setElapsed(p => p + 1), 1000);
 
-    const errs = [];
+    const errs: string[] = [];
+    const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
 
     try {
       setPhase("① Industry overview & AI adoption...");
       const o = await fetchOverview(ind.trim());
       setOv(o);
-    } catch (e) { errs.push("Overview: " + e.message); }
+    } catch (e: any) { errs.push("Overview: " + e.message); }
+
+    // Pause to stay under rate limit
+    setPhase("⏳ Cooling down to stay within API limits...");
+    await wait(25000);
 
     try {
       setPhase("② Competitive landscape & KPIs...");
       const c = await fetchCompetitive(ind.trim());
       setCp(c);
-    } catch (e) { errs.push("Competitive: " + e.message); }
+    } catch (e: any) { errs.push("Competitive: " + e.message); }
+
+    // Pause again
+    setPhase("⏳ Cooling down to stay within API limits...");
+    await wait(25000);
 
     try {
       setPhase("③ Labor market impact...");
       const l = await fetchLabor(ind.trim());
       setLm(l);
-    } catch (e) { errs.push("Labor: " + e.message); }
+    } catch (e: any) { errs.push("Labor: " + e.message); }
 
     if (errs.length) setErr(errs.join(" | "));
 
