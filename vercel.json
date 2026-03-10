@@ -1,6 +1,1 @@
-{
-  "rewrites": [
-    { "source": "/api/claude", "destination": "/api/claude" },
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
-}
+{"rewrites":[{"source":"/api/claude","destination":"/api/claude"},{"source":"/api/data","destination":"/api/data"},{"source":"/(.*)", "destination":"/index.html"}]}
