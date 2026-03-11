@@ -1,3 +1,4 @@
+import { useTheme, ThemeToggle } from "./useTheme";
 import { useState, useRef, useEffect } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -6,7 +7,7 @@ import {
 } from "recharts";
 
 /* ═══ PALETTE ═══ */
-const C = {
+let C: any = {
   bg: "#060b18", card: "#0d1425", border: "#1a2744",
   accent: "#f59e0b", text: "#f1f5f9", muted: "#94a3b8", dim: "#64748b",
   blue: "#3b82f6", purple: "#a78bfa", cyan: "#06b6d4",
@@ -175,7 +176,8 @@ function dl(c: string, f: string, t: string) { const b = new Blob([c], { type: t
 /* ══════════════════════════════════════════
    MAIN DASHBOARD
    ══════════════════════════════════════════ */
-export default function Dashboard() {
+export default function Dashboard() {const theme = useTheme();
+  C = { ...C, ...theme.colors };
   const [ind, setInd] = useState("");
   const [loading, setLoading] = useState(false);
   const [phase, setPhase] = useState("");
@@ -283,8 +285,8 @@ export default function Dashboard() {
             <div style={{ width: 6, height: 6, borderRadius: "50%", background: C.green }} />
             <span style={{ fontSize: 12, color: C.dim, fontFamily: "monospace" }}>Built by <span style={{ color: C.text, fontWeight: 700 }}>Avion Bryant</span> · <span style={{ color: C.gold }}>CTO of Stronghold Data</span></span>
             <span style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
-              <SourceTag text="BLS" /><SourceTag text="FRED" /><SourceTag text="Claude AI" />
-            </span>
+  <SourceTag text="BLS" /><SourceTag text="FRED" /><SourceTag text="Claude AI" /><ThemeToggle mode={theme.mode} toggle={theme.toggle} />
+           </span>
           </div>
         </div>
       </div>
